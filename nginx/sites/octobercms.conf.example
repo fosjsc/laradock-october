@@ -1,0 +1,61 @@
+server {
+
+    listen 80;
+    listen [::]:80;
+
+    # For https
+    # listen 443 ssl default_server;
+    # listen [::]:443 ssl default_server ipv6only=on;
+    # ssl_certificate /etc/nginx/ssl/default.crt;
+    # ssl_certificate_key /etc/nginx/ssl/default.key;
+
+    server_name fdcim.test;
+    root /var/www/public;
+    index index.php;
+
+    location / {
+        # Let October CMS handle everything by default.
+        # The path not resolved by October CMS router will return October CMS's 404 page.
+        # Everything that does not match with the allowlist below will fall into this.
+        rewrite ^/.*$ /index.php last;
+    }
+
+    # Pass the PHP scripts to FastCGI server
+    location ~ ^/index.php {
+        fastcgi_pass php-upstream;
+        fastcgi_index index.php;
+        fastcgi_buffers 16 16k;
+        fastcgi_buffer_size 32k;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        #fixes timeouts
+        fastcgi_read_timeout 600;
+        include fastcgi_params;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/letsencrypt/;
+        log_not_found off;
+    }
+
+    # Allowlist
+    location ~ ^/(favicon\.ico|sitemap\.xml|robots\.txt|humans\.txt) { try_files $uri /index.php; }
+
+    # Block all .dotfiles except well-known
+    location ~ /\.(?!well-known).* { deny all; }
+
+    ## Static Files
+    location ~ ^/storage/app/(uploads/public|media|resources) { try_files $uri 404; }
+    location ~ ^/storage/temp/public { try_files $uri 404; }
+    location ~ ^/modules/.*/(assets|resources) { try_files $uri 404; }
+    location ~ ^/modules/.*/(behaviors|widgets|formwidgets|reportwidgets)/.*/(assets|resources) { try_files $uri 404; }
+    location ~ ^/plugins/.*/.*/(assets|resources) { try_files $uri 404; }
+    location ~ ^/plugins/.*/.*/(behaviors|reportwidgets|formwidgets|widgets)/.*/(assets|resources) { try_files $uri 404; }
+    location ~ ^/themes/.*/(?:assets|resources) { try_files $uri 404; }
+
+    error_log  /var/log/nginx/fdcim_error.log;
+    access_log /var/log/nginx/fdcim_access.log;
+}
