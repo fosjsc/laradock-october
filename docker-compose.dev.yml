@@ -479,3 +479,72 @@ services:
       - 2375
     networks:
       - backend
+
+  ### Open search
+  opensearch-node1: # This is also the hostname of the container within the Docker network (i.e. https://opensearch-node1/)
+    restart: always
+    image: opensearchproject/opensearch:latest # Specifying the latest available image - modify if you want a specific version
+    environment:
+      - cluster.name=${OPENSEARCH_CLUSTER_NAME} # Name the cluster
+      - node.name=${OPENSEARCH_CLUSTER_NAME} # Name the node that will run in this container
+      - discovery.seed_hosts=${OPENSEARCH_CLUSTER_NAME} #,opensearch-node2 # Nodes to look for when discovering the cluster
+      - cluster.initial_cluster_manager_nodes=${OPENSEARCH_CLUSTER_NAME} #,opensearch-node2 # Nodes eligible to serve as cluster manager
+      - bootstrap.memory_lock=true # Disable JVM heap memory swapping
+      - OPENSEARCH_JAVA_OPTS=${OPENSEARCH_MIN_MAX_MEMORY} # Set min and max JVM heap sizes to at least 50% of system RAM
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD} # Sets the demo admin user password when using demo configuration, required for OpenSearch 2.12 and later
+      - DISABLE_INSTALL_DEMO_CONFIG=true # Prevents execution of bundled demo script which installs demo certificates and security configurations to OpenSearch
+      - DISABLE_SECURITY_PLUGIN=${OPENSEARCH_DISABLE_SECURITY_PLUGIN} # Disables Security plugin
+    ulimits:
+      memlock:
+        soft: -1 # Set memlock to unlimited (no soft or hard limit)
+        hard: -1
+      nofile:
+        soft: 65536 # Maximum number of open files for the opensearch user - set to at least 65536
+        hard: 65536
+    volumes:
+      - ${DATA_PATH_HOST}/opensearch_node1:/usr/share/opensearch/data # Creates volume called opensearch-data1 and mounts it to the container
+    expose:
+      - 9200
+      - 9600
+    networks:
+      - backend
+
+  fcollector:
+    build:
+      context: ./fcmas/collector/gin-admin-template
+      args:
+        - FCOLLECTOR_DASHBOARD_PORT=${FCOLLECTOR_DASHBOARD_PORT}
+    ports:
+      - "${FCOLLECTOR_DASHBOARD_PORT}:${FCOLLECTOR_DASHBOARD_PORT}"
+    restart: always
+    networks:
+      - backend
+    depends_on:
+      - data-prepper
+
+  data-prepper:
+    restart: always
+    image: opensearchproject/data-prepper:latest
+    volumes:
+      - ${DATA_PREPPER_CONFIG}:/usr/share/data-prepper/pipelines/modbus_pipeline.yaml
+      - ${DATA_PREPPER_MODBUS_PIPELINE}:/usr/share/data-prepper/config/data-prepper-config.yaml
+    expose:
+      - 2021
+    networks:
+      - backend
+    depends_on:
+      - opensearch-node1
+
+  opensearch-dashboards:
+    restart: always
+    image: opensearchproject/opensearch-dashboards:latest # Make sure the version of opensearch-dashboards matches the version of opensearch installed on other nodes
+    ports:
+      - ${OPENSEARCH_DASHBOARD_PORT}:5601 # Map host port 5601 to container port 5601
+    environment:
+      - OPENSEARCH_HOSTS=["http://opensearch-node1:9200"]
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=${OPENSEARCH_DISABLE_SECURITY_PLUGIN}
+      - vis_type_vega.enableExternalUrls=true # Kích hoạt External URLs cho Vega
+    networks:
+      - backend
+    depends_on:
+      - opensearch-node1
