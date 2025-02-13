@@ -1,0 +1,3 @@
+[submodule "fcollector"]
+	path = fcollector
+	url = git@github.com:fosjsc/fcollector.git

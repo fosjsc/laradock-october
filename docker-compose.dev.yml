@@ -380,8 +380,12 @@ services:
     depends_on:
       - php-fpm
     networks:
-      - frontend
-      - backend
+      frontend:
+        aliases:
+            - fdcim.test
+      backend:
+        aliases:
+          - fdcim.test
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -511,11 +515,16 @@ services:
 
   fcollector:
     build:
-      context: ./fcmas/collector/gin-admin-template
+      context: ./fcollector
       args:
-        - FCOLLECTOR_DASHBOARD_PORT=${FCOLLECTOR_DASHBOARD_PORT}
+        - PORT=${FCOLLECTOR_DASHBOARD_PORT}
+        - TIMEZONE=${FCOLLECTOR_TIMEZONE}
+        - PREPPER_URLS=${FCOLLECTOR_PREPPER_URLS}
+        - FCMAS_BASE_URL=${FCOLLECTOR_FCMAS_BASE_URL}
+    volumes:
+      - ${DATA_PATH_HOST}/fcollector:/usr/share/fcollector
     ports:
-      - "${FCOLLECTOR_DASHBOARD_PORT}:${FCOLLECTOR_DASHBOARD_PORT}"
+      - ${FCOLLECTOR_DASHBOARD_PORT}:${FCOLLECTOR_DASHBOARD_PORT}
     restart: always
     networks:
       - backend
@@ -526,8 +535,8 @@ services:
     restart: always
     image: opensearchproject/data-prepper:latest
     volumes:
-      - ${DATA_PREPPER_CONFIG}:/usr/share/data-prepper/pipelines/modbus_pipeline.yaml
-      - ${DATA_PREPPER_MODBUS_PIPELINE}:/usr/share/data-prepper/config/data-prepper-config.yaml
+      - ${DATA_PATH_HOST}/data-prepper/dev_modbus_pipeline.yaml:/usr/share/data-prepper/pipelines/modbus_pipeline.yaml
+      - ${DATA_PATH_HOST}/data-prepper/data-prepper-config.yaml:/usr/share/data-prepper/config/data-prepper-config.yaml
     expose:
       - 2021
     networks:
