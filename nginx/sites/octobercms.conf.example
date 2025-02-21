@@ -1,11 +1,12 @@
 server {
-
     listen 80;
-    listen [::]:80;
+    server_name fdcim.test;
+    return 301 https://fdcim.test$request_uri;
+}
 
+server {
     # For https
-    listen 443 ssl default_server;
-    listen [::]:443 ssl default_server ipv6only=on;
+    listen 443 ssl;
     ssl_certificate /etc/nginx/ssl/default.crt;
     ssl_certificate_key /etc/nginx/ssl/default.key;
 
