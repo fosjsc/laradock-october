@@ -1,7 +1,7 @@
 server {
     listen 80;
-    server_name minio-console.fdcim.test;
-    return 301 https://minio-console.fdcim.test$request_uri;
+    server_name fcollector.fdcim.test;
+    return 301 https://fcollector.fdcim.test$request_uri;
 }
 
 server {
@@ -9,10 +9,10 @@ server {
     ssl_certificate /etc/nginx/ssl/default.crt;
     ssl_certificate_key /etc/nginx/ssl/default.key;
 
-    server_name minio-console.fdcim.test;
+    server_name fcollector.fdcim.test;
 
     location / {
-        proxy_pass http://minio:9001;
+        proxy_pass http://fcollector:8082;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -32,6 +32,6 @@ server {
         log_not_found off;
     }
 
-    error_log /var/log/nginx/minio-console_error.log;
-    access_log /var/log/nginx/minio-console_access.log;
+    error_log /var/log/nginx/fcollector_error.log;
+    access_log /var/log/nginx/fcollector_access.log;
 }
