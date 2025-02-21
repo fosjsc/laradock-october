@@ -55,6 +55,7 @@ server {
     location ~ ^/plugins/.*/.*/(assets|resources) { try_files $uri 404; }
     location ~ ^/plugins/.*/.*/(behaviors|reportwidgets|formwidgets|widgets)/.*/(assets|resources) { try_files $uri 404; }
     location ~ ^/themes/.*/(?:assets|resources) { try_files $uri 404; }
+    location ~ ^/plugins/fos/foundation/skins/.*/(?:assets|resources) { try_files $uri 404; }
 
     error_log  /var/log/nginx/fdcim_error.log;
     access_log /var/log/nginx/fdcim_access.log;
