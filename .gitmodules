@@ -1,3 +1,9 @@
 [submodule "fcollector"]
 	path = fcollector
 	url = git@github.com:fosjsc/fcollector.git
+[submodule "device-simulator"]
+	path = device-simulator
+	url = git@github.com:fosjsc/device-simulator.git
+[submodule "d3f"]
+	path = d3f
+	url = git@github.com:fosjsc/d3f.git

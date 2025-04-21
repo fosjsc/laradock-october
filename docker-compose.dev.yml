@@ -382,8 +382,12 @@ services:
     depends_on:
       - php-fpm
     networks:
-      - frontend
-      - backend
+      frontend:
+        aliases:
+          - fdcim.test
+      backend:
+        aliases:
+          - fdcim.test
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -501,7 +505,7 @@ services:
   ### Open search
   opensearch-node1: # This is also the hostname of the container within the Docker network (i.e. https://opensearch-node1/)
     restart: always
-    image: opensearchproject/opensearch:latest # Specifying the latest available image - modify if you want a specific version
+    image: opensearchproject/opensearch:2 # Specifying the latest available image - modify if you want a specific version
     environment:
       - cluster.name=${OPENSEARCH_CLUSTER_NAME} # Name the cluster
       - node.name=${OPENSEARCH_CLUSTER_NAME} # Name the node that will run in this container
@@ -571,3 +575,55 @@ services:
       - backend
     depends_on:
       - opensearch-node1
+
+  d3f:
+    build:
+      context: ./d3f
+      args:
+        - NODE_ENV=development
+        - PORT=${FCMAS_D3F_PORT}
+        - APP_KEY=${FCMAS_D3F_KEY}
+        - LOG_LEVEL=debug
+        - DB_HOST=d3f_mysql
+        - DB_PORT=3306
+        - DB_USER=${FCMAS_D3F_DB_USER}
+        - DB_PASSWORD=${FCMAS_D3F_DB_PASSWORD}
+        - DB_DATABASE=${FCMAS_D3F_DB}
+        - OPENSEARCH_URL=http://opensearch-node1:9200
+    volumes:
+      - ${DATA_PATH_HOST}/d3f/user_upload:/app/public/images/devices/uploaded
+    ports:
+      - 3333:3333
+    restart: always
+    networks:
+      - backend
+    depends_on:
+      - d3f_mysql
+
+  d3f_mysql:
+    image: mysql:8.4.4
+    restart: always
+    ports:
+      - 3306:3306
+    volumes:
+      - ${DATA_PATH_HOST}/d3f_mysql:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_HOST=%
+      - MYSQL_ROOT_PASSWORD=${FCMAS_D3F_DB_PASSWORD}
+      - MYSQL_PASSWORD=${FCMAS_D3F_DB_PASSWORD}
+      - MYSQL_USER=${FCMAS_D3F_DB_USER}
+      - MYSQL_DATABASE=${FCMAS_D3F_DB}
+    networks:
+      - backend
+
+  fos-device-simulator:
+    build:
+      context: ./device-simulator
+    volumes:
+      - ${DATA_PATH_HOST}/device-simulator:/usr/share/device-simulator
+    environment:
+      - PORT=${DEVICE_SIMULATOR_PORT}
+    ports:
+      - ${DEVICE_SIMULATOR_PORT}:${DEVICE_SIMULATOR_PORT}
+    networks:
+      - backend

@@ -380,7 +380,7 @@ services:
     networks:
       frontend:
         aliases:
-            - fcmas.test
+          - fcmas.test
       backend:
         aliases:
           - fcmas.test
@@ -471,7 +471,7 @@ services:
   ### Open search
   opensearch-node1: # This is also the hostname of the container within the Docker network (i.e. https://opensearch-node1/)
     restart: always
-    image: opensearchproject/opensearch:latest # Specifying the latest available image - modify if you want a specific version
+    image: opensearchproject/opensearch:2 # Specifying the latest available image - modify if you want a specific version
     environment:
       - cluster.name=${OPENSEARCH_CLUSTER_NAME} # Name the cluster
       - node.name=${OPENSEARCH_CLUSTER_NAME} # Name the node that will run in this container
@@ -553,3 +553,47 @@ services:
       - EMAIL=thienvu1802@gmail.com
     networks:
       - frontend
+
+  d3f:
+    build:
+      context: ./d3f
+      args:
+        - NODE_ENV=production
+        - PORT=${FCMAS_D3F_PORT}
+        - APP_KEY=${FCMAS_D3F_KEY}
+        - LOG_LEVEL=error
+        - DB_HOST=d3f_mysql
+        - DB_PORT=3306
+        - DB_USER=${FCMAS_D3F_DB_USER}
+        - DB_PASSWORD=${FCMAS_D3F_DB_PASSWORD}
+        - DB_DATABASE=${FCMAS_D3F_DB}
+        - OPENSEARCH_URL=http://opensearch-node1:9200
+    restart: always
+    networks:
+      - backend
+    depends_on:
+      - d3f_mysql
+
+  d3f_mysql:
+    image: mysql:8.4.4
+    restart: always
+    volumes:
+      - ${DATA_PATH_HOST}/d3f_mysql:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_HOST=%
+      - MYSQL_ROOT_PASSWORD=${FCMAS_D3F_DB_PASSWORD}
+      - MYSQL_PASSWORD=${FCMAS_D3F_DB_PASSWORD}
+      - MYSQL_USER=${FCMAS_D3F_DB_USER}
+      - MYSQL_DATABASE=${FCMAS_D3F_DB}
+    networks:
+      - backend
+
+  fos-device-simulator:
+    build:
+      context: ./device-simulator
+    environment:
+      - PORT=${DEVICE_SIMULATOR_PORT}
+    expose:
+      - ${DEVICE_SIMULATOR_PORT}
+    networks:
+      - backend
